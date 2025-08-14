@@ -88,11 +88,7 @@ export async function processRun(runs, run_id) {
             // Use the Notion search endpoint. `query` and optional
             // `query_type` = 'internal' or 'users'.
             result = await callApi('/link_6886ea546c548191a0ec455bd2fe0e70/connector_37316be7febe4224b3d31465bae4dbd7/search', params);
-            break;
-          case 'canva':
-            // Use Canva search endpoint. `query` can be a design name or
-            // keywords. For folder listing, use list_folder_items.
-            result = await callApi('/connector_ef718304ffe64e31947b71887e3d51fa/search', params);
+ 
             break;
           case 'github':
             // For GitHub, the minimal skeleton does not implement search. You
