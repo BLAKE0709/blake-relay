@@ -1,0 +1,104 @@
+openapi: 3.1.0
+info:
+  title: Blake Relay API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+paths:
+  /relay/run:
+    post:
+      operationId: runRelay
+      summary: Execute a fan-out/fan-in job with provenance and optional deliveries.
+      description: |
+        The Custom GPT sends a strict JSON TaskPlan. The relay executes sources (APIs/vendors/headless if allowed),
+        normalizes results, and optionally writes to destinations (Slack/Notion/GitHub/Drive/Warehouse).
+      security:
+        - RelayAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskPlan"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResult"
+  /relay/status/{run_id}:
+    get:
+      operationId: getRunStatus
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResult"
+components:
+  securitySchemes:
+    RelayAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: RELAY_KEY
+  schemas:
+    TaskPlan:
+      type: object
+      additionalProperties: false
+      required: [agent_slug, intent, tasks]
+      properties:
+        agent_slug: { type: string, description: "Configuration selector for this agent (e.g., blinkwell-ops)" }
+        intent:     { type: string, description: "High-level purpose: daily_brief, repo_intel, clinical_scan, etc." }
+        tasks:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [source, mode]
+            properties:
+              source:
+                type: string
+                description: "official_api:notion | official_api:github | official_api:gmail | official_api:drive | official_api:calendar | official_api:canva | vendor:newsapi | vendor:serpapi | site:example.com"
+              mode: { type: string, enum: ["fetch","write","transform"] }
+              params: { type: object, additionalProperties: true }
+              legal:
+                type: object
+                properties:
+                  method: { type: string, enum: ["official_api","vendor","headless_browser"] }
+                  tos_ok: { type: boolean, default: true }
+        deliver:
+          type: array
+          items:
+            type: object
+            required: [target, params]
+            properties:
+              target: { type: string, enum: ["slack","notion","github","drive","warehouse","twilio","gmail","calendar","canva"] }
+              params: { type: object, additionalProperties: true }
+        require_confirmation: { type: boolean, default: false }
+    RunResult:
+      type: object
+      required: [run_id, status, artifacts]
+      properties:
+        run_id: { type: string }
+        status: { type: string, enum: ["queued","running","complete","partial","failed"] }
+        artifacts:
+          type: array
+          items:
+            type: object
+            required: [source, ts]
+            properties:
+              source: { type: string }
+              url:    { type: string, nullable: true }
+              ts:     { type: string, format: date-time }
+              data:   { type: object }
+        errors:
+          type: array
+          items: { type: string }
