@@ -1,5 +1,5 @@
 import http from 'http';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import { processRun } from './jobProcessor.js';
 
 /*
@@ -70,8 +70,8 @@ const server = http.createServer(async (req, res) => {
     // Parse the JSON body
     try {
       const payload = await parseJsonBody(req);
-      const run_id = 'run_' + uuid();
-      runs[run_id] = { status: 'queued', payload: payload, artifacts: [], errors: [] };
+      const run_id 'run_' + randomUUID();
+      rruns[run_id] = { status: 'queued', payload, artifacts: [], errors: [] }
       console.log(`Queued run ${run_id}`, payload);
       // Kick off processing asynchronously. Do not await so that the HTTP response returns immediately.
       processRun(runs, run_id).catch(err => {
